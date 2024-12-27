@@ -1,0 +1,1 @@
+/usr/bin/g++ -fPIC -g -shared  -o FEM_3D.cpython-310-x86_64-linux-gnu.so CMakeFiles/FEM_3D.dir/FEM_3D.cpp.o  libother.a 

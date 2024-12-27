@@ -1,0 +1,17 @@
+[
+{
+  "directory": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/build",
+  "command": "/usr/bin/g++  -I/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element -g -fPIC -o CMakeFiles/other.dir/MyClass_hexahedral_edge_element/node.cpp.o -c /home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element/node.cpp",
+  "file": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element/node.cpp"
+},
+{
+  "directory": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/build",
+  "command": "/usr/bin/g++  -I/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element -g -fPIC -o CMakeFiles/other.dir/MyClass_hexahedral_edge_element/element.cpp.o -c /home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element/element.cpp",
+  "file": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element/element.cpp"
+},
+{
+  "directory": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/build",
+  "command": "/usr/bin/g++ -DFEM_3D_EXPORTS -I/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/MyClass_hexahedral_edge_element -isystem /home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/pybind11/include -isystem /usr/include/python3.10 -g -fPIC -fvisibility=hidden -o CMakeFiles/FEM_3D.dir/FEM_3D.cpp.o -c /home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/FEM_3D.cpp",
+  "file": "/home/syunya-unix/MyWorkspace/MyGit/test_1/FEM/3D/FEM_3D.cpp"
+}
+]

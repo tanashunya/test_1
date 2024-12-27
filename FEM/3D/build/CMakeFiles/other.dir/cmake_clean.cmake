@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/other.dir/GenMatrix.cpp.o"
-  "CMakeFiles/other.dir/GenMatrix.cpp.o.d"
-  "CMakeFiles/other.dir/MyFunction.cpp.o"
-  "CMakeFiles/other.dir/MyFunction.cpp.o.d"
+  "CMakeFiles/other.dir/MyClass_hexahedral_edge_element/element.cpp.o"
+  "CMakeFiles/other.dir/MyClass_hexahedral_edge_element/element.cpp.o.d"
+  "CMakeFiles/other.dir/MyClass_hexahedral_edge_element/node.cpp.o"
+  "CMakeFiles/other.dir/MyClass_hexahedral_edge_element/node.cpp.o.d"
   "libother.a"
   "libother.pdb"
 )
