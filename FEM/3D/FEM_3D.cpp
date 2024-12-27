@@ -1,5 +1,5 @@
-#include "MyClass_hexahedral_edge_element/node.h"
-#include "MyClass_hexahedral_edge_element/element.h"
+#include "node.h"
+#include "element.h"
 #include <vector>
 #include <memory>
 #include <pybind11/pybind11.h>
@@ -16,6 +16,10 @@ class FEM_3D{
         std::vector<std::shared_ptr<NODE>> nodes;
         std::vector<std::shared_ptr<ELEMENT>> elements;
 };
+/////////////////////////////////////////////////////////////////////////////////////
+FEM_3D::FEM_3D() {}
+/////////////////////////////////////////////////////////////////////////////////////
+FEM_3D::~FEM_3D() {}
 /////////////////////////////////////////////////////////////////////////////////////
 void FEM_3D::main_func() {
     std::cout << "FEM_3D" << std::endl;

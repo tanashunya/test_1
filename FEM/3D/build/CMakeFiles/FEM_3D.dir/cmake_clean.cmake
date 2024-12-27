@@ -1,7 +1,7 @@
 file(REMOVE_RECURSE
   "CMakeFiles/FEM_3D.dir/FEM_3D.cpp.o"
   "CMakeFiles/FEM_3D.dir/FEM_3D.cpp.o.d"
-  "FEM_3D.cpython-310-x86_64-linux-gnu.so"
+  "FEM_3D.cpython-312-x86_64-linux-gnu.so"
   "FEM_3D.pdb"
 )
 

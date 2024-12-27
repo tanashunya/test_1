@@ -5,7 +5,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(pybind11)
 
-add_library(other MyClass_hexahedral_edge_element/node.cpp MyClass_hexahedral_edge_element/element.cpp)
+add_library(other node.cpp element.cpp)
 set_target_properties(other PROPERTIES LINKER_LANGUAGE CXX)
 
 pybind11_add_module(FEM_3D FEM_3D.cpp)

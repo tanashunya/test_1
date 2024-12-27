@@ -1,2 +1,2 @@
-/usr/bin/ar qc libother.a CMakeFiles/other.dir/MyClass_hexahedral_edge_element/node.cpp.o CMakeFiles/other.dir/MyClass_hexahedral_edge_element/element.cpp.o
+/usr/bin/ar qc libother.a CMakeFiles/other.dir/node.cpp.o CMakeFiles/other.dir/element.cpp.o
 /usr/bin/ranlib libother.a
