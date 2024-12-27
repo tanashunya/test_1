@@ -1,0 +1,2 @@
+/bin/ar qc libother.a CMakeFiles/other.dir/GenMatrix.cpp.o CMakeFiles/other.dir/MyFunction.cpp.o
+/bin/ranlib libother.a

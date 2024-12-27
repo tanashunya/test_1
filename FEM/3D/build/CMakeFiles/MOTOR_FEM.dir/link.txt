@@ -1,0 +1,1 @@
+/bin/c++ -fPIC -g -shared  -o MOTOR_FEM.cpython-310-x86_64-linux-gnu.so CMakeFiles/MOTOR_FEM.dir/Motor_FEM.cpp.o  libother.a 
