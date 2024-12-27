@@ -5,19 +5,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_subdirectory(pybind11)
 
-add_library(other node.cpp element.cpp)
+add_library(other node.cpp element.cpp edge.cpp)
 set_target_properties(other PROPERTIES LINKER_LANGUAGE CXX)
 
 pybind11_add_module(FEM_3D FEM_3D.cpp)
 
 target_link_libraries(FEM_3D PRIVATE other)
-
-# otherライブラリのincludeパスを設定
-target_include_directories(other PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/MyClass_hexahedral_edge_element
-)
-
-# FEM_3Dモジュールのincludeパスも設定
-target_include_directories(FEM_3D PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/MyClass_hexahedral_edge_element
-)
