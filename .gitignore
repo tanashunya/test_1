@@ -11,3 +11,5 @@ FEM/3D/env1
 
 # # 特定のパスのファイルを無視する
 # src/secrets/api-keys.js 
+
+.venv/ 
