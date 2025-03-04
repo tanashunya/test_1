@@ -1,0 +1,10 @@
+numpy
+opencv-python==4.6.0.66
+opencv-contrib-python==4.6.0.66
+torch
+torchvision
+albumentations
+matplotlib
+pandas
+pybind11
+gmsh
