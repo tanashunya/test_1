@@ -1,0 +1,6 @@
+gmsh
+mapdl-archive
+pyvista
+numpy
+meshio
+ipykernel 

@@ -10,6 +10,7 @@
 """
 import math
 import time
+import sys
 
 import gmsh
 import mapdl_archive
@@ -155,7 +156,7 @@ def create_3d_motor_model(filename="model.msh"):
     filename = "model.msh"
     gmsh.write(filename)
 
-def visualize_model(filename="model.msh"):
+def visualize_mesh_by_pyvista(filename="model.msh"):
     ###############################################################################
     # pyvistaを使用して読み込み、mapdl-archiveを使用してアーカイブファイルに変換
     grid = pv.read(filename)
@@ -170,182 +171,91 @@ def visualize_model(filename="model.msh"):
     plotter.add_mesh(grid, color='w', show_edges=True, line_width=1.5, opacity=0.5)  # 空気領域を半透明に設定
     plotter.show()
 
-def create_3d_magnet_iron_mesh(filename="magnet_iron_model.msh"):
+class MaterialBlock:
+    """直方体を表すクラス"""
+    def __init__(self, center, size, rotation=(0, 0, 0), name="Block", lc=0.1):
+        self.center = center
+        self.size = size
+        self.rotation = [math.radians(r) if isinstance(r, (int, float)) else r for r in rotation]
+        self.name = name
+        self.lc = lc
+
+    def create(self):
+        # 中心を基準に直方体を作成
+        x, y, z = [c - s / 2 for c, s in zip(self.center, self.size)]
+        tag = gmsh.model.occ.addBox(x, y, z, *self.size)
+        
+        # 回転を適用
+        if any(self.rotation):
+            gmsh.model.occ.rotate([(3, tag)], self.center[0], self.center[1], self.center[2], 1, 0, 0, self.rotation[0])
+            gmsh.model.occ.rotate([(3, tag)], self.center[0], self.center[1], self.center[2], 0, 1, 0, self.rotation[1])
+            gmsh.model.occ.rotate([(3, tag)], self.center[0], self.center[1], self.center[2], 0, 0, 1, self.rotation[2])
+        
+        return tag
+
+def check_intersection(air_tag, material_tags):
+    """材料同士の交差をチェックし、交差があればエラーメッセージを出力して終了"""
+    for i, tag1 in enumerate(material_tags):
+        for tag2 in material_tags[i+1:]:
+            gmsh.model.occ.fragment([(3, tag1)], [(3, tag2)])
+            gmsh.model.occ.synchronize()
+            entities = gmsh.model.getEntities(3)
+            if len(entities) > len(material_tags) + 1:  # 交差がある場合
+                print(f"Error: Materials {tag1} and {tag2} are intersecting.")
+                gmsh.finalize()
+                sys.exit(1)
+    gmsh.model.occ.synchronize()
+
+def create_3d_magnet_iron_mesh(filename):
+    """磁石と鉄心のメッシュモデルを生成"""
     gmsh.initialize()
     gmsh.model.add("MagnetIronModel")
 
-    # 1x1x1の空間を定義
-    lc = 0.1
-    p1 = gmsh.model.geo.addPoint(0, 0, 0, lc)
-    p2 = gmsh.model.geo.addPoint(1, 0, 0, lc)
-    p3 = gmsh.model.geo.addPoint(1, 1, 0, lc)
-    p4 = gmsh.model.geo.addPoint(0, 1, 0, lc)
-    p5 = gmsh.model.geo.addPoint(0, 0, 1, lc)
-    p6 = gmsh.model.geo.addPoint(1, 0, 1, lc)
-    p7 = gmsh.model.geo.addPoint(1, 1, 1, lc)
-    p8 = gmsh.model.geo.addPoint(0, 1, 1, lc)
+    # 空気領域の直方体
+    air = MaterialBlock(
+        center=[0.5, 0.5, 0.5],
+        size=[1.0, 1.0, 1.0],
+        rotation=[0, 0, 0],
+        name="Air",
+        lc=0.1
+    )
+    air_tag = air.create()
 
-    # 磁石の大きさ、向き、重心座標を定義
-    magnet_length = 0.3
-    magnet_width = 0.1
-    magnet_height = 0.05
-    magnet_center = [0.5, 0.5, 0.4]  # 磁石の重心座標
-    magnet_tilt = [math.radians(0), math.radians(0), math.radians(0)]  # 磁石の傾き（xyz成分）
+    # 磁石の直方体
+    magnet = MaterialBlock(
+        center=[0.5, 0.5, 0.4],
+        size=[0.3, 0.1, 0.05],
+        rotation=[0, 0, 0],
+        name="Magnet",
+        lc=0.1
+    )
+    magnet_tag = magnet.create()
 
-    # 鉄の大きさ、向き、重心座標を定義
-    iron_length = 0.3
-    iron_width = 0.1
-    iron_height = 0.05
-    iron_center = [0.5, 0.5, 0.6]  # 鉄の重心座標
-    iron_tilt = [math.radians(0), math.radians(0), math.radians(0)]  # 鉄の傾き（xyz成分）
+    # 鉄心の直方体
+    iron = MaterialBlock(
+        center=[0.5, 0.5, 0.6],
+        size=[0.3, 0.1, 0.05],
+        rotation=[0, 0, 0],
+        name="Iron",
+        lc=0.1
+    )
+    iron_tag = iron.create()
 
-    # 傾きを考慮して座標を計算する関数
-    def calculate_tilted_point(x, y, z, center, tilt):
-        # X軸回転
-        y_rot = y * math.cos(tilt[0]) - z * math.sin(tilt[0])
-        z_rot = y * math.sin(tilt[0]) + z * math.cos(tilt[0])
-        y, z = y_rot, z_rot
+    # 材料同士の交差をチェック（空気は除外）
+    check_intersection(air_tag, [magnet_tag, iron_tag])
 
-        # Y軸回転
-        x_rot = x * math.cos(tilt[1]) + z * math.sin(tilt[1])
-        z_rot = -x * math.sin(tilt[1]) + z * math.cos(tilt[1])
-        x, z = x_rot, z_rot
+    # 材料と空気領域のブール演算 (差分)
+    gmsh.model.occ.cut([(3, air_tag)], [(3, magnet_tag), (3, iron_tag)])
+    gmsh.model.occ.synchronize()
 
-        # Z軸回転
-        x_rot = x * math.cos(tilt[2]) - y * math.sin(tilt[2])
-        y_rot = x * math.sin(tilt[2]) + y * math.cos(tilt[2])
-        x, y = x_rot, y_rot
+    # 空気領域の外部面に物理グループを追加
+    air_faces = gmsh.model.getBoundary([(3, air_tag)], oriented=False)
+    gmsh.model.addPhysicalGroup(2, [tag for dim, tag in air_faces if dim == 2], name="Boundary")
 
-        return x, y, z
-
-    # 磁石の頂点座標を計算
-    pm1 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] - magnet_length / 2, magnet_center[1] - magnet_width / 2, magnet_center[2] - magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm2 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] + magnet_length / 2, magnet_center[1] - magnet_width / 2, magnet_center[2] - magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm3 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] + magnet_length / 2, magnet_center[1] + magnet_width / 2, magnet_center[2] - magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm4 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] - magnet_length / 2, magnet_center[1] + magnet_width / 2, magnet_center[2] - magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm5 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] - magnet_length / 2, magnet_center[1] - magnet_width / 2, magnet_center[2] + magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm6 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] + magnet_length / 2, magnet_center[1] - magnet_width / 2, magnet_center[2] + magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm7 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] + magnet_length / 2, magnet_center[1] + magnet_width / 2, magnet_center[2] + magnet_height / 2, magnet_center, magnet_tilt), lc)
-    pm8 = gmsh.model.geo.addPoint(*calculate_tilted_point(magnet_center[0] - magnet_length / 2, magnet_center[1] + magnet_width / 2, magnet_center[2] + magnet_height / 2, magnet_center, magnet_tilt), lc)
-
-    # 鉄の頂点座標を計算
-    pi1 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] - iron_length / 2, iron_center[1] - iron_width / 2, iron_center[2] - iron_height / 2, iron_center, iron_tilt), lc)
-    pi2 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] + iron_length / 2, iron_center[1] - iron_width / 2, iron_center[2] - iron_height / 2, iron_center, iron_tilt), lc)
-    pi3 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] + iron_length / 2, iron_center[1] + iron_width / 2, iron_center[2] - iron_height / 2, iron_center, iron_tilt), lc)
-    pi4 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] - iron_length / 2, iron_center[1] + iron_width / 2, iron_center[2] - iron_height / 2, iron_center, iron_tilt), lc)
-    pi5 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] - iron_length / 2, iron_center[1] - iron_width / 2, iron_center[2] + iron_height / 2, iron_center, iron_tilt), lc)
-    pi6 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] + iron_length / 2, iron_center[1] - iron_width / 2, iron_center[2] + iron_height / 2, iron_center, iron_tilt), lc)
-    pi7 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] + iron_length / 2, iron_center[1] + iron_width / 2, iron_center[2] + iron_height / 2, iron_center, iron_tilt), lc)
-    pi8 = gmsh.model.geo.addPoint(*calculate_tilted_point(iron_center[0] - iron_length / 2, iron_center[1] + iron_width / 2, iron_center[2] + iron_height / 2, iron_center, iron_tilt), lc)
-
-    # 線を定義
-    l1 = gmsh.model.geo.addLine(p1, p2)
-    l2 = gmsh.model.geo.addLine(p2, p3)
-    l3 = gmsh.model.geo.addLine(p3, p4)
-    l4 = gmsh.model.geo.addLine(p4, p1)
-    l5 = gmsh.model.geo.addLine(p1, p5)
-    l6 = gmsh.model.geo.addLine(p2, p6)
-    l7 = gmsh.model.geo.addLine(p3, p7)
-    l8 = gmsh.model.geo.addLine(p4, p8)
-    l9 = gmsh.model.geo.addLine(p5, p6)
-    l10 = gmsh.model.geo.addLine(p6, p7)
-    l11 = gmsh.model.geo.addLine(p7, p8)
-    l12 = gmsh.model.geo.addLine(p8, p5)
-
-    # 磁石の線を定義
-    lm1 = gmsh.model.geo.addLine(pm1, pm2)
-    lm2 = gmsh.model.geo.addLine(pm2, pm3)
-    lm3 = gmsh.model.geo.addLine(pm3, pm4)
-    lm4 = gmsh.model.geo.addLine(pm4, pm1)
-    lm5 = gmsh.model.geo.addLine(pm1, pm5)
-    lm6 = gmsh.model.geo.addLine(pm2, pm6)
-    lm7 = gmsh.model.geo.addLine(pm3, pm7)
-    lm8 = gmsh.model.geo.addLine(pm4, pm8)
-    lm9 = gmsh.model.geo.addLine(pm5, pm6)
-    lm10 = gmsh.model.geo.addLine(pm6, pm7)
-    lm11 = gmsh.model.geo.addLine(pm7, pm8)
-    lm12 = gmsh.model.geo.addLine(pm8, pm5)
-
-    # 鉄の線を定義
-    li1 = gmsh.model.geo.addLine(pi1, pi2)
-    li2 = gmsh.model.geo.addLine(pi2, pi3)
-    li3 = gmsh.model.geo.addLine(pi3, pi4)
-    li4 = gmsh.model.geo.addLine(pi4, pi1)
-    li5 = gmsh.model.geo.addLine(pi1, pi5)
-    li6 = gmsh.model.geo.addLine(pi2, pi6)
-    li7 = gmsh.model.geo.addLine(pi3, pi7)
-    li8 = gmsh.model.geo.addLine(pi4, pi8)
-    li9 = gmsh.model.geo.addLine(pi5, pi6)
-    li10 = gmsh.model.geo.addLine(pi6, pi7)
-    li11 = gmsh.model.geo.addLine(pi7, pi8)
-    li12 = gmsh.model.geo.addLine(pi8, pi5)
-
-    # 面を定義
-    ll1 = gmsh.model.geo.addCurveLoop([l1, l2, l3, l4])
-    ll2 = gmsh.model.geo.addCurveLoop([l5, l9, -l6, -l1])
-    ll3 = gmsh.model.geo.addCurveLoop([l6, l10, -l7, -l2])
-    ll4 = gmsh.model.geo.addCurveLoop([l7, l11, -l8, -l3])
-    ll5 = gmsh.model.geo.addCurveLoop([l8, l12, -l5, -l4])
-    ll6 = gmsh.model.geo.addCurveLoop([l9, l10, l11, l12])
-
-    # 磁石の面を定義
-    llm1 = gmsh.model.geo.addCurveLoop([lm1, lm2, lm3, lm4])
-    llm2 = gmsh.model.geo.addCurveLoop([lm5, lm9, -lm6, -lm1])
-    llm3 = gmsh.model.geo.addCurveLoop([lm6, lm10, -lm7, -lm2])
-    llm4 = gmsh.model.geo.addCurveLoop([lm7, lm11, -lm8, -lm3])
-    llm5 = gmsh.model.geo.addCurveLoop([lm8, lm12, -lm5, -lm4])
-    llm6 = gmsh.model.geo.addCurveLoop([lm9, lm10, lm11, lm12])
-
-    # 鉄の面を定義
-    lli1 = gmsh.model.geo.addCurveLoop([li1, li2, li3, li4])
-    lli2 = gmsh.model.geo.addCurveLoop([li5, li9, -li6, -li1])
-    lli3 = gmsh.model.geo.addCurveLoop([li6, li10, -li7, -li2])
-    lli4 = gmsh.model.geo.addCurveLoop([li7, li11, -li8, -li3])
-    lli5 = gmsh.model.geo.addCurveLoop([li8, li12, -li5, -li4])
-    lli6 = gmsh.model.geo.addCurveLoop([li9, li10, li11, li12])
-
-    s1 = gmsh.model.geo.addPlaneSurface([ll1])
-    s2 = gmsh.model.geo.addPlaneSurface([ll2])
-    s3 = gmsh.model.geo.addPlaneSurface([ll3])
-    s4 = gmsh.model.geo.addPlaneSurface([ll4])
-    s5 = gmsh.model.geo.addPlaneSurface([ll5])
-    s6 = gmsh.model.geo.addPlaneSurface([ll6])
-
-    # 磁石の面を定義
-    sm1 = gmsh.model.geo.addPlaneSurface([llm1])
-    sm2 = gmsh.model.geo.addPlaneSurface([llm2])
-    sm3 = gmsh.model.geo.addPlaneSurface([llm3])
-    sm4 = gmsh.model.geo.addPlaneSurface([llm4])
-    sm5 = gmsh.model.geo.addPlaneSurface([llm5])
-    sm6 = gmsh.model.geo.addPlaneSurface([llm6])
-
-    # 鉄の面を定義
-    si1 = gmsh.model.geo.addPlaneSurface([lli1])
-    si2 = gmsh.model.geo.addPlaneSurface([lli2])
-    si3 = gmsh.model.geo.addPlaneSurface([lli3])
-    si4 = gmsh.model.geo.addPlaneSurface([lli4])
-    si5 = gmsh.model.geo.addPlaneSurface([lli5])
-    si6 = gmsh.model.geo.addPlaneSurface([lli6])
-
-    # ボリュームを定義
-    sl = gmsh.model.geo.addSurfaceLoop([s1, s2, s3, s4, s5, s6])
-    vol = gmsh.model.geo.addVolume([sl])
-
-    # 磁石のボリュームを定義
-    slm = gmsh.model.geo.addSurfaceLoop([sm1, sm2, sm3, sm4, sm5, sm6])
-    volm = gmsh.model.geo.addVolume([slm])
-
-    # 鉄のボリュームを定義
-    sli = gmsh.model.geo.addSurfaceLoop([si1, si2, si3, si4, si5, si6])
-    voli = gmsh.model.geo.addVolume([sli])
-
-    # 物理グループを追加
-    gmsh.model.addPhysicalGroup(3, [vol], name="Air")
-    gmsh.model.addPhysicalGroup(3, [volm], name="Magnet")
-    gmsh.model.addPhysicalGroup(3, [voli], name="Iron")
+    # 四面体メッシュを生成するための設定
+    gmsh.option.setNumber("Mesh.Algorithm3D", 1)  # 1はDelaunay法を指定
 
     # メッシュを生成
-    gmsh.model.geo.synchronize()
     gmsh.model.mesh.generate(3)
 
     # ファイルに書き出し
@@ -355,6 +265,7 @@ def create_3d_magnet_iron_mesh(filename="magnet_iron_model.msh"):
 if __name__ == "__main__":
     # 関数を呼び出して3Dモータモデルを作成
     # create_3d_motor_model(filename="model.msh")
-    # visualize_model(filename="model.msh")
-    create_3d_magnet_iron_mesh(filename="magnet_iron_model.msh")
-    visualize_model(filename="magnet_iron_model.msh")
+    # visualize_mesh_by_pyvista(filename="model.msh")
+    create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh")
+    create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh1")
+    visualize_mesh_by_pyvista(filename="3d_magnet_iron_model.msh")
