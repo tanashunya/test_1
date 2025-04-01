@@ -262,10 +262,19 @@ def create_3d_magnet_iron_mesh(filename):
     gmsh.write(filename)
     gmsh.finalize()
 
+def create_3d_magnet_iron_mesh_2(filename):
+    """磁石と鉄心のメッシュモデルを生成"""
+    gmsh.initialize()
+    gmsh.model.add("MagnetIronModel")
+
+    
+
 if __name__ == "__main__":
     # 関数を呼び出して3Dモータモデルを作成
-    # create_3d_motor_model(filename="model.msh")
-    # visualize_mesh_by_pyvista(filename="model.msh")
-    create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh")
-    create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh1")
-    visualize_mesh_by_pyvista(filename="3d_magnet_iron_model.msh")
+    create_3d_motor_model(filename="model.msh")
+    visualize_mesh_by_pyvista(filename="model.msh")
+    # create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh")
+    # create_3d_magnet_iron_mesh(filename="3d_magnet_iron_model.msh1")
+    # visualize_mesh_by_pyvista(filename="3d_magnet_iron_model.msh")
+    # create_3d_magnet_iron_mesh_2(filename="3d_magnet_iron_model.msh")
+    # visualize_mesh_by_pyvista(filename="3d_magnet_iron_model.msh")
